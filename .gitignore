@@ -1,0 +1,13 @@
+# Pacchetti generati da build.py
+dist/
+*.zip
+
+# Sistema / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
