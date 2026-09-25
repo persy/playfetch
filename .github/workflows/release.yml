@@ -1,0 +1,38 @@
+name: Release
+
+# Builds the Chrome/Firefox zip packages and attaches them to a GitHub
+# release whenever you push a tag like v1.4 (must match manifest.json's
+# "version"). Create the tag with:
+#   git tag v1.4 && git push --tags
+# or draft a release on GitHub and let it create the tag for you.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Check that the tag matches the manifest version
+        run: |
+          VERSION=$(python -c "import json; print(json.load(open('manifest.json'))['version'])")
+          test "v$VERSION" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME does not match manifest version $VERSION"; exit 1; }
+
+      - name: Build packages
+        run: python build.py
+
+      - name: Publish the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*.zip

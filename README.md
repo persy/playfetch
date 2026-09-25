@@ -18,19 +18,27 @@ Supported sites:
 
 ## Installation
 
-Download or clone this repository, so that you have a folder containing `manifest.json`.
+Download `playfetch-<browser>-<version>.zip` from the [latest release](../../releases/latest) and extract it. In the steps below, select the folder that directly contains `manifest.json`.
 
 ### Chrome
 
 1. Open `chrome://extensions/` and turn on **Developer mode** (top right).
-2. Click **Load unpacked** and select the folder.
+2. Click **Load unpacked** and select the folder from `playfetch-chrome-<version>.zip`.
 
 ### Firefox (121 or later)
 
 1. Open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on...** and select the `manifest.json` file.
+2. Click **Load Temporary Add-on...** and select the `manifest.json` file from `playfetch-firefox-<version>.zip`.
 
 Firefox removes temporary add-ons when it is closed, so repeat the steps after a restart. Site access may also not be granted automatically in Manifest V3: if the icon does nothing, open `about:addons` → PlayFetch → **Permissions** and allow access to hypnotube.com and redgifs.com.
+
+### From source
+
+```bash
+python build.py
+```
+
+This creates `dist/chrome/`, `dist/firefox/` and the corresponding zip files, with a manifest tailored to each browser (Chrome: `service_worker` only; Firefox: `scripts` only — loading the repository folder itself works too, but Chrome then shows a harmless warning about the unused Manifest V2 `scripts` key).
 
 ## Usage
 
@@ -72,10 +80,17 @@ The extension has no server of its own and does not collect or send data to its 
 
 ## Development
 
-- `manifest.json`: extension manifest (it lists both `service_worker` and `scripts` so the same folder loads in Chrome and Firefox).
+- `manifest.json`: development manifest (lists both `service_worker` and `scripts`, so the repository folder itself loads unpacked in either browser).
 - `background.js`: toolbar click, badge, RedGifs API, request sniffing.
 - `content.js`: link/id extraction from the page and clipboard copy.
 - `icon.png`, `logo.svg`: extension icon and its vector source.
+- `build.py`: builds the per-browser packages into `dist/`.
+- `.github/workflows/release.yml`: on every `v*` tag, builds the packages and attaches them to a GitHub release.
+
+### Releasing
+
+1. Bump `version` in `manifest.json`.
+2. Tag and push: `git tag v<version> && git push --tags` (the tag must match the manifest version).
 
 ## TODO
 
