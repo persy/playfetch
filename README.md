@@ -44,27 +44,18 @@ This creates `dist/chrome/`, `dist/firefox/` and the corresponding zip files, wi
 
 1. Open a video on HypnoTube or RedGifs. If the page was already open before you installed or reloaded the extension, **reload it** (F5).
 2. In a RedGifs feed, scroll to the video you want.
-3. Click the extension icon: the link is copied and opens in a new tab, where you can watch it or save it (right click → *Save video as*).
+3. Click the extension icon to open the popup, turn on the actions you want (**open in a new tab**, **copy the link**, **download**) and press **Run**. The popup remembers your last choice.
 
-For three seconds the icon shows a badge with the outcome:
-
-| Badge | Meaning |
-|---|---|
-| **OK** | Link copied and tab opened |
-| **F5** | No content script in this tab: reload the page |
-| **NOV** | No `<video>` found in the page |
-| **NOID** | The video uses a `blob:` URL and its id could not be found (typical of some feeds) |
-| **API** | The id was found, but the API request failed |
-| **CLIP** | Link found, but copying to the clipboard failed (the tab still opens) |
-| **N/A** | Unsupported site |
+If something goes wrong, the popup shows a short message instead of running the action (for example "Reload the page, then try again" if the content script is missing from the tab, or "Could not identify this video" for a RedGifs feed where the id could not be found).
 
 ## Permissions
 
 | Permission | Why |
 |---|---|
 | `clipboardWrite` | Copy the link to the clipboard |
-| `storage` | Store the temporary RedGifs API token and the `.mp4` requests observed |
+| `storage` | Store the temporary RedGifs API token, the `.mp4` requests observed and your popup choices |
 | `webRequest` | Observe `.mp4` requests (fallback for RedGifs) |
+| `downloads` | Start the download when that option is on |
 | Access to `hypnotube.com` and `*.redgifs.com` | Read the page and call the RedGifs API |
 
 ## Privacy
@@ -81,8 +72,9 @@ The extension has no server of its own and does not collect or send data to its 
 ## Development
 
 - `manifest.json`: development manifest (lists both `service_worker` and `scripts`, so the repository folder itself loads unpacked in either browser).
-- `background.js`: toolbar click, badge, RedGifs API, request sniffing.
+- `background.js`: resolves the video link (DOM, RedGifs API, request sniffing) and runs the actions chosen in the popup.
 - `content.js`: link/id extraction from the page and clipboard copy.
+- `popup.html`, `popup.js`: the toolbar popup (the three switches and the Run button).
 - `icon.png`, `logo.svg`: extension icon and its vector source.
 - `build.py`: builds the per-browser packages into `dist/`.
 - `.github/workflows/release.yml`: on every `v*` tag, builds the packages and attaches them to a GitHub release.
@@ -94,8 +86,7 @@ The extension has no server of its own and does not collect or send data to its 
 
 ## TODO
 
-- Popup options: copy only / open only / both
-- Direct video download
+- Remember the last used link per tab, to avoid re-resolving it if you press Run again
 
 ## License
 

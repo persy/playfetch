@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PlayFetch</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    width: 240px;
+    font: 13px/1.4 -apple-system, "Segoe UI", sans-serif;
+    background: #1e1f29;
+    color: #f2f2f7;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 8px;
+  }
+  header img { width: 22px; height: 22px; border-radius: 6px; }
+  header span { font-weight: 600; font-size: 14px; }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+
+  .switch { position: relative; width: 34px; height: 20px; flex: none; }
+  .switch input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .slider {
+    position: absolute; inset: 0;
+    background: #46465a;
+    border-radius: 999px;
+    transition: background .15s;
+    pointer-events: none;
+  }
+  .slider::before {
+    content: "";
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 2px; top: 2px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .15s;
+  }
+  input:checked + .slider { background: #7c3aed; }
+  input:checked + .slider::before { transform: translateX(14px); }
+
+  .run {
+    display: block;
+    width: calc(100% - 28px);
+    margin: 10px 14px 14px;
+    padding: 9px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #ff5c9d, #7c3aed);
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .run:disabled { opacity: .6; cursor: default; }
+
+  .status {
+    margin: 0 14px 14px;
+    font-size: 12px;
+    min-height: 15px;
+    color: #c6c6d4;
+  }
+  .status.error { color: #ff8a8a; }
+  .status.ok { color: #8ae6a8; }
+</style>
+</head>
+<body>
+  <header>
+    <img src="icon.png" alt="">
+    <span>PlayFetch</span>
+  </header>
+
+  <div class="row">
+    <label for="open">Open video in new tab</label>
+    <span class="switch">
+      <input type="checkbox" id="open">
+      <span class="slider"></span>
+    </span>
+  </div>
+  <div class="row">
+    <label for="copy">Copy link to clipboard</label>
+    <span class="switch">
+      <input type="checkbox" id="copy">
+      <span class="slider"></span>
+    </span>
+  </div>
+  <div class="row">
+    <label for="download">Download video</label>
+    <span class="switch">
+      <input type="checkbox" id="download">
+      <span class="slider"></span>
+    </span>
+  </div>
+
+  <button class="run" id="run">Run</button>
+  <p class="status" id="status"></p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

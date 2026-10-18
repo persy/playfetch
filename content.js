@@ -97,23 +97,14 @@ function findHypnotube() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "copyVideoLink") {
+  if (request.action === "findVideoLink") {
     try {
       const isHypnotube = location.hostname.endsWith("hypnotube.com");
       const found = (isHypnotube && findHypnotube()) || findGeneric();
-
-      if (!found.url) {
-        sendResponse({ success: false, reason: found.reason, hint: found.hint });
-        return true;
-      }
-
-      navigator.clipboard
-        .writeText(found.url)
-        .then(() => sendResponse({ success: true, url: found.url }))
-        .catch(() => sendResponse({ success: false, reason: "clip" }));
+      sendResponse(found); // { url } oppure { reason, hint }
     } catch (e) {
       console.error(e);
-      sendResponse({ success: false, reason: "err" });
+      sendResponse({ reason: "err" });
     }
   } else if (request.action === "copyText") {
     navigator.clipboard

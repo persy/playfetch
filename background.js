@@ -1,16 +1,11 @@
 const SUPPORTED = ["hypnotube.com/video", "redgifs.com/"];
 
-/* ---------- Feedback sull'icona (badge) ---------- */
-
-function flash(tabId, text, color) {
-  chrome.action.setBadgeBackgroundColor({ color, tabId });
-  chrome.action.setBadgeText({ text, tabId });
-  setTimeout(() => chrome.action.setBadgeText({ text: "", tabId }), 3000);
-}
-
-const REASONS = {
-  novideo: "NOV", // nessun <video> nella pagina
-  clip: "CLIP",   // copia negli appunti fallita
+const REASON_LABEL = {
+  novideo: "No video found on this page.",
+  blob: "Could not identify this video.",
+  clip: "Could not copy to the clipboard.",
+  unsupported: "This site is not supported.",
+  f5: "Reload the page, then try again.",
 };
 
 /* ---------- Sniffing delle richieste .mp4 (per i video blob: di RedGifs) ---------- */
@@ -104,7 +99,7 @@ async function fetchFromApi(id) {
   return null;
 }
 
-/* ---------- Click sull'icona ---------- */
+/* ---------- Trova il link mp4 per una scheda ---------- */
 
 const send = (tabId, msg) =>
   new Promise((resolve) => {
@@ -114,29 +109,21 @@ const send = (tabId, msg) =>
     });
   });
 
-chrome.action.onClicked.addListener(async (tab) => {
+// Ritorna { url } oppure { error, reason }
+async function resolveLink(tab) {
   if (!tab.url || !SUPPORTED.some((s) => tab.url.includes(s))) {
-    flash(tab.id, "N/A", "#888888");
-    return;
+    return { error: true, reason: "unsupported" };
   }
 
-  const res = await send(tab.id, { action: "copyVideoLink" });
+  const res = await send(tab.id, { action: "findVideoLink" });
 
   // Nessun content script: la pagina era già aperta prima di ricaricare l'estensione
-  if (!res) {
-    flash(tab.id, "F5", "#d9822b");
-    return;
-  }
+  if (!res) return { error: true, reason: "f5" };
 
   // Caso semplice: URL diretto trovato nel DOM (HypnoTube)
-  if (res.success) {
-    console.log("✅ Direct link copied:", res.url);
-    flash(tab.id, "OK", "#2e9e5b");
-    chrome.tabs.create({ url: res.url, index: tab.index + 1 });
-    return;
-  }
+  if (res.url) return { url: res.url };
 
-  // Video con URL blob: -> usa gli .mp4 intercettati dalla rete
+  // Video con URL blob: -> API RedGifs, poi sniffing come piano B
   if (res.reason === "blob") {
     const id = idFromTabUrl(tab.url) || res.hint;
     let url = null;
@@ -144,18 +131,51 @@ chrome.action.onClicked.addListener(async (tab) => {
       try { url = await fetchFromApi(id); } catch (e) { console.error("API:", e); }
     }
     if (!url) url = await pickSniffed(tab.id, [id]);
-    if (!url) {
-      console.error("❌ Nessun .mp4 intercettato per questa scheda");
-      flash(tab.id, id ? "API" : "NOID", "#c0392b");
-      return;
-    }
-    const copied = await send(tab.id, { action: "copyText", text: url });
-    console.log("✅ Sniffed link:", url);
-    flash(tab.id, copied && copied.success ? "OK" : "CLIP", copied && copied.success ? "#2e9e5b" : "#d9822b");
-    chrome.tabs.create({ url, index: tab.index + 1 });
-    return;
+    if (!url) return { error: true, reason: "blob" };
+    return { url };
   }
 
-  console.error("❌ Failed to get video link:", res.reason);
-  flash(tab.id, REASONS[res.reason] || "ERR", "#c0392b");
+  return { error: true, reason: res.reason || "novideo" };
+}
+
+/* ---------- Messaggi dal popup ---------- */
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action !== "run") return false;
+
+  (async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) {
+      sendResponse({ ok: false, message: "No active tab." });
+      return;
+    }
+
+    const found = await resolveLink(tab);
+    if (found.error) {
+      sendResponse({ ok: false, message: REASON_LABEL[found.reason] || "Something went wrong." });
+      return;
+    }
+
+    const { url } = found;
+    const { open, download } = request.options;
+    const done = [];
+
+    if (open) {
+      chrome.tabs.create({ url, index: tab.index + 1 });
+      done.push("Tab opened");
+    }
+    if (download) {
+      try {
+        await chrome.downloads.download({ url });
+        done.push("Download started");
+      } catch (e) {
+        console.error("download:", e);
+        done.push("Could not start the download");
+      }
+    }
+
+    sendResponse({ ok: true, message: done.join(" · "), url });
+  })();
+
+  return true; // risposta asincrona
 });

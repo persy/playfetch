@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 DIST = ROOT / "dist"
-FILES = ["background.js", "content.js", "icon.png"]
+FILES = ["background.js", "content.js", "popup.html", "popup.js", "icon.png"]
 
 # Firefox requires an add-on id for Manifest V3. Use one of your own
 # (email-like or GUID) and keep it unchanged across releases.
